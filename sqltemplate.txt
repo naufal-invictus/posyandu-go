@@ -1,0 +1,57 @@
+DROP DATABASE IF EXISTS dbsipograf;
+
+CREATE DATABASE dbsipograf;
+USE dbsipograf;
+
+CREATE TABLE `users` (
+  `id_user` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` enum('admin','orangtua') NOT NULL DEFAULT 'orangtua',
+  PRIMARY KEY (`id_user`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `users` (`username`, `password`, `role`) VALUES
+('admin', 'Abc123', 'admin');
+
+CREATE TABLE `t_anak` (
+  `id_anak` int(11) NOT NULL AUTO_INCREMENT,
+  `id_orangtua` int(11) DEFAULT NULL,
+  `nama_anak` varchar(100) NOT NULL,
+  `nama_ibu` varchar(100) NOT NULL,
+  `tempat_lahir` varchar(100) NOT NULL,
+  `tanggal_lahir` date NOT NULL,
+  `jenis_kelamin` enum('Laki-laki','Perempuan') NOT NULL,
+  `alamat` text NOT NULL,
+  PRIMARY KEY (`id_anak`),
+  KEY `fk_orangtua` (`id_orangtua`),
+  CONSTRAINT `fk_orangtua` FOREIGN KEY (`id_orangtua`) REFERENCES `users` (`id_user`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `t_anak` (`id_orangtua`, `nama_anak`, `nama_ibu`, `tempat_lahir`, `tanggal_lahir`, `jenis_kelamin`, `alamat`) VALUES
+(NULL, 'GundulGembel Turbo X900', 'Ani Nursanti', 'Sukoharjo', '2021-10-15', 'Laki-laki', 'Joho RT 1 RW 3'),
+(NULL, 'Kentang Rebus Berlari', 'Catur Wulandari', 'Sukoharjo', '2023-06-03', 'Laki-laki', 'Joho RT 1 RW 3'),
+(NULL, 'Si Mie Sedih Baperan', 'Sulistyowati Eka', 'Sukoharjo', '2023-04-10', 'Perempuan', 'Joho RT 1 RW 4');
+
+CREATE TABLE `t_penimbangan` (
+  `id_penimbangan` int(11) NOT NULL AUTO_INCREMENT,
+  `id_anak` int(11) NOT NULL,
+  `tgl_penimbangan` date NOT NULL,
+  `umur` int(11) NOT NULL COMMENT 'Dalam Bulan',
+  `berat_badan` float NOT NULL,
+  `tinggi_badan` float NOT NULL,
+  `jenis_imunisasi` varchar(100) DEFAULT NULL,
+  `keterangan` text NOT NULL,
+  `petugas` varchar(100) NOT NULL,
+  `posyandu` varchar(100) NOT NULL,
+  PRIMARY KEY (`id_penimbangan`),
+  KEY `fk_anak` (`id_anak`),
+  CONSTRAINT `fk_anak` FOREIGN KEY (`id_anak`) REFERENCES `t_anak` (`id_anak`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `t_penimbangan` (`id_anak`, `tgl_penimbangan`, `umur`, `berat_badan`, `tinggi_badan`, `jenis_imunisasi`, `keterangan`, `petugas`, `posyandu`) VALUES
+(1, '2021-10-17', 0, 3.5, 50, 'Hepatitis B', 'Asi Eksklusif', 'Rini', 'Posyandu Melati'),
+(1, '2021-11-17', 1, 5, 55, NULL, 'Asi Eksklusif', 'Rini', 'Posyandu Melati'),
+(1, '2021-12-17', 2, 6.7, 58, 'DPT', 'Asi Eksklusif', 'Rini', 'Posyandu Melati'),
+(1, '2022-01-17', 3, 7.2, 62, 'Polio', 'Asi Eksklusif', 'Yanti', 'Posyandu Melati');
