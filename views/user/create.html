@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tambah User Baru</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/form.css">
+</head>
+<body>
+  <div class="container">
+    <h2 class="mt-4">Tambah Akun Pengguna</h2>
+    <form action="/store_user" method="post">
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="text" class="form-control" id="password" name="password" placeholder="Password" required>
+      </div>
+      <div class="form-group">
+        <label for="role">Role (Peran):</label>
+        <select class="form-control" id="role" name="role" required>
+            <option value="orangtua">Orang Tua</option>
+            <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="form-group">
+          <button type="submit" class="btn btn-primary">Buat Akun</button>
+          <a href="/data_anak" class="btn btn-secondary" style="margin-left: 10px;">Batal</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

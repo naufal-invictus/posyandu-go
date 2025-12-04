@@ -1,0 +1,164 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  padding: none;
+  text-align: center;
+  min-height: 100vh;
+  background-attachment: fixed;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+h2 {
+  color: #333;
+}
+
+table {
+  max-width: 100%;
+  margin: 0 auto;
+  width: 70%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+th,
+td {
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+.title {
+  font-weight: bold;
+  font-size: 25px;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.action-links {
+  margin-bottom: 20px;
+}
+
+.action-links a {
+  display: inline-block;
+  padding: 8px 12px;
+  background-color: #2f557e;
+  color: #fff;
+  text-decoration: none;
+  margin-right: 10px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.action-links a:hover {
+  background-color: #1f3b54;
+}
+
+tfoot th {
+  font-style: italic;
+  color: #666;
+}
+
+.empty-data {
+  font-style: italic;
+  color: #666;
+}
+
+/* Kombinasi warna antar kolom */
+tr:nth-child(even) td {
+  background-color: #f2f2f2;
+}
+
+/* Blok warna navy */
+th,
+th a,
+.empty-data,
+tfoot th {
+  background-color: #2f557e;
+  color: #fff;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #2f557e;
+  padding: 15px 20px;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-logo img {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
+
+.navbar-logo a {
+  color: #dcdcdc;
+  font-weight: bold;
+  font-style: italic;
+  text-decoration: none;
+  font-size: 24px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.navbar-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+.navbar-menu li {
+  margin-left: 50px;
+}
+
+.navbar-menu a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.navbar-menu li a[href="produk.php"] {
+  color: #ffd700;
+}
+
+.action-links {
+  text-align: right;
+  margin-top: 20px;
+}
+
+.action-links a {
+  display: inline-block;
+  padding: 8px 12px;
+  background-color: #2f557e;
+  color: #fff;
+  text-decoration: none;
+  margin-right: 225px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.action-links a:hover {
+  background-color: #1f3b54;
+}
+
+tr:hover {
+  background-color: #bacbe0;
+  transition: background-color 0.3s ease;
+}
+
+tr:nth-child(even):hover td {
+  background-color: #bacbe0;
+  transition: background-color 0.3s ease;
+}
