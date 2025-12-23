@@ -6,41 +6,47 @@ import (
 	"text/template"
 )
 
-func CreateUser(w http.ResponseWriter, r *http.Request) {
+// Menampilkan Form Tambah Orang Tua (User + Profile)
+func CreateOrangTua(w http.ResponseWriter, r *http.Request) {
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-
-	sessionData := GetSessionDetails(r)
-	if sessionData["Role"] != "admin" {
+	if GetSessionDetails(r)["Role"] != "admin" {
 		http.Redirect(w, r, "/data_anak", http.StatusSeeOther)
 		return
 	}
-
-	tmpl := template.Must(template.ParseFiles("views/user/create.html"))
+	tmpl := template.Must(template.ParseFiles("views/user/create_parent.html"))
 	tmpl.Execute(w, nil)
 }
 
-func StoreUser(w http.ResponseWriter, r *http.Request) {
+// Proses Simpan: Insert ke tabel Users -> Ambil ID -> Insert ke tabel Orang_Tua
+func StoreOrangTua(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Redirect(w, r, "/create_user", http.StatusSeeOther)
-		return
-	}
-
-	if !IsAuthenticated(r) {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		http.Redirect(w, r, "/create_orangtua", http.StatusSeeOther)
 		return
 	}
 
 	username := r.FormValue("username")
 	password := r.FormValue("password")
-	role := r.FormValue("role")
+	namaIbu := r.FormValue("nama_ibu")
+	namaAyah := r.FormValue("nama_ayah")
+	alamat := r.FormValue("alamat")
+	noHP := r.FormValue("no_hp")
 
-	_, err := config.DB.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", username, password, role)
+	res, err := config.DB.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, 'orangtua')", username, password)
+	if err != nil {
+		http.Error(w, "Gagal membuat user (Username mungkin sudah ada): "+err.Error(), 500)
+		return
+	}
+
+	lastID, _ := res.LastInsertId()
+
+	_, err = config.DB.Exec("INSERT INTO orang_tua (id_user, nama_ibu, nama_ayah, alamat, no_hp) VALUES (?, ?, ?, ?, ?)",
+		lastID, namaIbu, namaAyah, alamat, noHP)
 
 	if err != nil {
-		http.Error(w, "Gagal membuat user (Username mungkin sudah ada)", http.StatusInternalServerError)
+		http.Error(w, "User dibuat tapi gagal simpan profil ortu: "+err.Error(), 500)
 		return
 	}
 

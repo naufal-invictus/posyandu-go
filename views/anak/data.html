@@ -5,84 +5,85 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    .navbar-logo img { width: 50px; margin-right: 10px; }
-    .navbar a { text-decoration: none; }
-    .title { text-align: center; margin-top: 20px; font-size: 26px; margin-bottom: 20px; }
+    body { background-color: #f8f9fa; }
+    .navbar { box-shadow: 0 2px 4px rgba(0,0,0,.1); }
   </style>
 </head>
 <body>
-  <div class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="navbar-logo">
-      <img src="/img/Favicon.png" alt="Posyandu Logo">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary px-4">
+    <a class="navbar-brand fw-bold" href="#">
+      <i class="fas fa-hospital-user"></i> SIPOGRAF
+    </a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item"><a class="nav-link active" href="/data_anak">Data Anak</a></li>
+        <li class="nav-item"><a class="nav-link" href="/laporan">Laporan</a></li>
+        <li class="nav-item"><a class="nav-link" href="/api/jadwal" target="_blank">API Jadwal</a></li>
+        <li class="nav-item"><span class="nav-link text-white">|</span></li>
+        <li class="nav-item"><a class="nav-link text-warning" href="#">Role: {{ .Role }}</a></li>
+        <li class="nav-item ms-3"><a class="btn btn-sm btn-light text-primary fw-bold" href="/logout">Logout</a></li>
+      </ul>
     </div>
-    <a class="navbar-brand" href="#">Posyandu ({{ .Role }})</a>
-    <ul class="navbar-menu navbar-nav ms-auto">
-      <li class="nav-item"><a class="nav-link" href="/data_anak">Data Anak</a></li>
-      <li class="nav-item"><a class="nav-link" href="/logout">Keluar</a></li>
-    </ul>
-  </div>
+  </nav>
 
-  <div class="container mt-4">
-    <h2 class="title">Data Anak Posyandu</h2>
-    <table class="table">
-      <thead class="table-dark">
-        <tr>
-          <th class="text-center">ID Anak</th>
-          <th class="text-center">Nama Anak</th>
-          <th class="text-center">Nama Ibu</th>
-          <th class="text-center">Tempat Lahir</th>
-          <th class="text-center">Tanggal Lahir</th>
-          <th class="text-center">Jenis Kelamin</th>
-          <th class="text-center">Alamat</th>
-          <th class="text-center">Action</th>
-          <th class="text-center">Data Penimbangan</th>
-        </tr>
-      </thead>
-      <tbody>
-      {{ if .Anak }}
-        {{ $role := .Role }}
-        {{ range .Anak }}
-          <tr>
-            <td class="text-center">{{ .ID }}</td>
-            <td class="text-center">{{ .NamaAnak }}</td>
-            <td class="text-center">{{ .NamaIbu }}</td>
-            <td class="text-center">{{ .TempatLahir }}</td>
-            <td class="text-center">{{ .TanggalLahir }}</td>
-            <td class="text-center">{{ .JenisKelamin }}</td>
-            <td class="text-center">{{ .Alamat }}</td>
-            <td class="text-center">
-              {{ if or (eq $role "orangtua") (eq $role "admin") }}
-              <a href="/edit_anak?id_anak={{ .ID }}" class="btn btn-sm btn-primary">
-                <i class="fas fa-pencil-alt"></i>
-              </a>
-              {{ end }}
-              {{ if eq $role "admin" }}
-              <a href="/delete_anak?id_anak={{ .ID }}" class="btn btn-sm btn-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus data anak ini?');">
-                <i class="fas fa-trash"></i>
-              </a>
-              {{ end }}
-            </td>
-            <td class="text-center">
-              <a href="/data_penimbangan?id_anak={{ .ID }}" class="btn btn-sm btn-info">Pilih</a>
-            </td>
-          </tr>
+  <div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="text-primary fw-bold">Daftar Anak</h2>
+      <div>
+        <a href="/create_anak" class="btn btn-success"><i class="fas fa-plus-circle"></i> Tambah Data Anak</a>
+        {{ if eq .Role "admin" }}
+        <a href="/create_orangtua" class="btn btn-info text-white ms-2"><i class="fas fa-user-plus"></i> Tambah Akun Ortu</a>
         {{ end }}
-      {{ else }}
-        <tr><td colspan="9" class="empty-data text-center">Belum ada data anak</td></tr>
-      {{ end }}
-      </tbody>
-    </table>
-  </div>
-<div class="container mt-3">
-    <div class="action-links">
-      <a href="/create_anak" class="btn btn-primary">+ Add Data Anak</a>
+      </div>
+    </div>
 
-      {{ if eq .Role "admin" }}
-      <a href="/create_user" class="btn btn-warning" style="margin-left: 10px;">
-        <i class="fas fa-user-plus"></i> Tambah Akun Orang Tua
-      </a>
-      {{ end }}
-
+    <div class="card shadow-sm">
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-primary">
+            <tr>
+              <th>Nama Anak</th>
+              <th>Ibu</th>
+              <th>Lahir</th>
+              <th>JK</th>
+              <th>Alamat</th>
+              <th class="text-center">Aksi</th>
+              <th class="text-center">Monitor</th>
+            </tr>
+          </thead>
+          <tbody>
+          {{ if .Anak }}
+            {{ $role := .Role }}
+            {{ range .Anak }}
+              <tr>
+                <td class="fw-bold">{{ .NamaAnak }}</td>
+                <td>{{ .NamaIbu }}</td>
+                <td>{{ .TempatLahir }}, {{ .TanggalLahir }}</td>
+                <td><span class="badge bg-info">{{ .JenisKelamin }}</span></td>
+                <td>{{ .Alamat }}</td>
+                <td class="text-center">
+                  <a href="/edit_anak?id_anak={{ .ID }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                    <i class="fas fa-pencil-alt"></i>
+                  </a>
+                  {{ if eq $role "admin" }}
+                  <a href="/delete_anak?id_anak={{ .ID }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus?');" title="Hapus">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                  {{ end }}
+                </td>
+                <td class="text-center">
+                  <a href="/data_penimbangan?id_anak={{ .ID }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-weight"></i> Timbang
+                  </a>
+                </td>
+              </tr>
+            {{ end }}
+          {{ else }}
+            <tr><td colspan="7" class="text-center py-4 text-muted">Belum ada data anak. Silakan tambah data.</td></tr>
+          {{ end }}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </body>

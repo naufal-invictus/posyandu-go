@@ -5,64 +5,85 @@ import (
 	"net/http"
 	"sipograf-go/config"
 	"sipograf-go/models"
-	"text/template"
-
-	"github.com/gorilla/sessions"
+	"time"
 )
 
-var Store = sessions.NewCookieStore([]byte("secret-key"))
+// Global Key untuk session (Sederhana)
+var sessionStore = make(map[string]map[string]interface{})
 
 func LoginPage(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("views/login.html"))
-	tmpl.Execute(w, nil)
+	// Jika sudah login, lempar ke dashboard sesuai role
+	if IsAuthenticated(r) {
+		http.Redirect(w, r, "/data_anak", http.StatusSeeOther)
+		return
+	}
+	http.ServeFile(w, r, "views/login.html")
 }
 
 func LoginProcess(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
+	if r.Method == http.MethodPost {
+		username := r.FormValue("username")
+		password := r.FormValue("password")
+
+		var user models.User
+		err := config.DB.QueryRow("SELECT id_user, username, password, role FROM users WHERE username = ? AND password = ?", username, password).Scan(&user.ID, &user.Username, &user.Password, &user.Role)
+
+		if err == sql.ErrNoRows {
+			http.Redirect(w, r, "/login?err=failed", http.StatusSeeOther)
+			return
+		}
+
+		// Buat Session ID unik (contoh sederhana pakai waktu)
+		sessionID := "session_" + username + "_" + time.Now().Format("20060102150405")
+		
+		// Simpan data session di memory server
+		sessionStore[sessionID] = map[string]interface{}{
+			"UserID":   user.ID,
+			"Username": user.Username,
+			"Role":     user.Role,
+		}
+
+		// SET COOKIE DENGAN PATH "/" (Sangat Penting!)
+		http.SetCookie(w, &http.Cookie{
+			Name:     "sipograf_session",
+			Value:    sessionID,
+			Path:     "/",            // <-- Wajib ada agar terbaca di /edit_anak
+			HttpOnly: true,
+			MaxAge:   3600 * 24,      // 1 Hari
+		})
+
+		http.Redirect(w, r, "/data_anak", http.StatusSeeOther)
 	}
-
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-
-	var user models.User
-	err := config.DB.QueryRow("SELECT id_user, username, role FROM users WHERE username = ? AND password = ?", username, password).Scan(&user.ID, &user.Username, &user.Role)
-
-	if err == sql.ErrNoRows {
-		http.Redirect(w, r, "/login?error=1", http.StatusSeeOther)
-		return
-	}
-
-	session, _ := Store.Get(r, "session-name")
-	session.Values["authenticated"] = true
-	session.Values["username"] = user.Username
-	session.Values["role"] = user.Role
-	session.Values["id_user"] = user.ID
-	session.Save(r, w)
-
-	http.Redirect(w, r, "/data_anak", http.StatusSeeOther)
 }
+
 func Logout(w http.ResponseWriter, r *http.Request) {
-	session, _ := Store.Get(r, "session-name")
-	session.Values["authenticated"] = false
-	session.Save(r, w)
+	c, err := r.Cookie("sipograf_session")
+	if err == nil {
+		delete(sessionStore, c.Value)
+	}
+	// Hapus Cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:   "sipograf_session",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
+	})
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func IsAuthenticated(r *http.Request) bool {
-	session, _ := Store.Get(r, "session-name")
-	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+	c, err := r.Cookie("sipograf_session")
+	if err != nil {
 		return false
 	}
-	return true
+	_, ok := sessionStore[c.Value]
+	return ok
 }
 
 func GetSessionDetails(r *http.Request) map[string]interface{} {
-	session, _ := Store.Get(r, "session-name")
-	return map[string]interface{}{
-		"Role":     session.Values["role"],
-		"Username": session.Values["username"],
-		"UserID":   session.Values["id_user"],
+	c, err := r.Cookie("sipograf_session")
+	if err != nil {
+		return nil
 	}
+	return sessionStore[c.Value]
 }

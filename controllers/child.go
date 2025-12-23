@@ -2,13 +2,23 @@ package controllers
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 	"sipograf-go/config"
 	"sipograf-go/models"
 	"text/template"
 )
 
+// Helper untuk mematikan cache browser
+func disableCache(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+}
+
 func DataAnak(w http.ResponseWriter, r *http.Request) {
+	disableCache(w)
+
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -18,35 +28,35 @@ func DataAnak(w http.ResponseWriter, r *http.Request) {
 	role := sessionData["Role"]
 	userID := sessionData["UserID"]
 
+	// Query LEFT JOIN agar anak tanpa ortu (yatim/piatu/data rusak) tetap muncul
+	query := `SELECT a.id_anak, a.id_orangtua, a.nama_anak, a.tempat_lahir, a.tanggal_lahir, a.jenis_kelamin, 
+			  COALESCE(o.nama_ibu, 'Tidak Ada Data') as nama_ibu, COALESCE(o.alamat, '-') as alamat 
+			  FROM anak a 
+			  LEFT JOIN orang_tua o ON a.id_orangtua = o.id_orangtua`
+	
 	var rows *sql.Rows
 	var err error
 
-	if role == "admin" {
-		rows, err = config.DB.Query("SELECT t.id_anak, t.id_orangtua, t.nama_anak, t.nama_ibu, t.tempat_lahir, t.tanggal_lahir, t.jenis_kelamin, t.alamat, u.username FROM t_anak t LEFT JOIN users u ON t.id_orangtua = u.id_user")
+	if role == "orangtua" {
+		query += " WHERE o.id_user = ?"
+		rows, err = config.DB.Query(query, userID)
 	} else {
-		rows, err = config.DB.Query("SELECT id_anak, id_orangtua, nama_anak, nama_ibu, tempat_lahir, tanggal_lahir, jenis_kelamin, alamat, '' as username FROM t_anak WHERE id_orangtua = ?", userID)
+		rows, err = config.DB.Query(query)
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Database Error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	type AnakWithUser struct {
-		models.Anak
-		NamaOrangTua string
-	}
-
-	var anakList []AnakWithUser
+	var anakList []models.Anak
 	for rows.Next() {
-		var a AnakWithUser
-		var namaOrangTua sql.NullString
-		rows.Scan(&a.ID, &a.IDOrangtua, &a.NamaAnak, &a.NamaIbu, &a.TempatLahir, &a.TanggalLahir, &a.JenisKelamin, &a.Alamat, &namaOrangTua)
-		if namaOrangTua.Valid {
-			a.NamaOrangTua = namaOrangTua.String
-		} else {
-			a.NamaOrangTua = "-"
+		var a models.Anak
+		var idOrtu sql.NullInt64
+		rows.Scan(&a.ID, &idOrtu, &a.NamaAnak, &a.TempatLahir, &a.TanggalLahir, &a.JenisKelamin, &a.NamaIbu, &a.Alamat)
+		if idOrtu.Valid {
+			a.IDOrangtua = int(idOrtu.Int64)
 		}
 		anakList = append(anakList, a)
 	}
@@ -60,104 +70,112 @@ func DataAnak(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, data)
 }
 
+// FIX: CreateAnak dengan Error Handling yang lebih baik
 func CreateAnak(w http.ResponseWriter, r *http.Request) {
+	disableCache(w)
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+	
+	// Ambil data orang tua untuk dropdown
+	rows, err := config.DB.Query("SELECT id_orangtua, nama_ibu, alamat FROM orang_tua ORDER BY nama_ibu ASC")
+	if err != nil {
+		log.Println("Error fetching parents:", err) // Log error ke terminal
+	}
 
-	sessionData := GetSessionDetails(r)
-	role := sessionData["Role"]
-
-	var parents []models.User
-	if role == "admin" {
-		rows, _ := config.DB.Query("SELECT id_user, username FROM users WHERE role = 'orangtua'")
-		if rows != nil {
-			defer rows.Close()
-			for rows.Next() {
-				var u models.User
-				rows.Scan(&u.ID, &u.Username)
-				parents = append(parents, u)
+	var parents []models.Parent
+	if rows != nil {
+		defer rows.Close()
+		for rows.Next() {
+			var p models.Parent
+			// Scan sesuai struct (ID, NamaIbu, Alamat)
+			if err := rows.Scan(&p.ID, &p.NamaIbu, &p.Alamat); err == nil {
+				parents = append(parents, p)
 			}
 		}
 	}
 
-	data := map[string]interface{}{
-		"Role":    role,
-		"Parents": parents,
-	}
-
 	tmpl := template.Must(template.ParseFiles("views/anak/create.html"))
-	tmpl.Execute(w, data)
+	tmpl.Execute(w, map[string]interface{}{
+		"Parents": parents, 
+		"Role": GetSessionDetails(r)["Role"],
+	})
 }
 
 func StoreAnak(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		namaAnak := r.FormValue("nama_anak")
-		namaIbu := r.FormValue("nama_ibu")
-		tempatLahir := r.FormValue("tempat_lahir")
-		tanggalLahir := r.FormValue("tanggal_lahir")
-		jenisKelamin := r.FormValue("jenis_kelamin")
-		alamat := r.FormValue("alamat")
-
-		sessionData := GetSessionDetails(r)
-		role := sessionData["Role"]
-		var idOrangtua interface{} = nil
-
-		if role == "orangtua" {
-			idOrangtua = sessionData["UserID"]
-		} else if role == "admin" {
-			formParent := r.FormValue("id_orangtua")
-			if formParent != "" {
-				idOrangtua = formParent
+		var idOrtu interface{}
+		idForm := r.FormValue("id_orangtua")
+		
+		if idForm != "" {
+			idOrtu = idForm
+		} else {
+			sessionData := GetSessionDetails(r)
+			var tempID int
+			err := config.DB.QueryRow("SELECT id_orangtua FROM orang_tua WHERE id_user = ?", sessionData["UserID"]).Scan(&tempID)
+			if err == nil {
+				idOrtu = tempID
+			} else {
+				idOrtu = nil 
 			}
 		}
 
-		_, err := config.DB.Exec("INSERT INTO t_anak (id_orangtua, nama_anak, nama_ibu, tempat_lahir, tanggal_lahir, jenis_kelamin, alamat) VALUES (?, ?, ?, ?, ?, ?, ?)",
-			idOrangtua, namaAnak, namaIbu, tempatLahir, tanggalLahir, jenisKelamin, alamat)
-
+		_, err := config.DB.Exec("INSERT INTO anak (id_orangtua, nama_anak, tempat_lahir, tanggal_lahir, jenis_kelamin) VALUES (?, ?, ?, ?, ?)",
+			idOrtu, r.FormValue("nama_anak"), r.FormValue("tempat_lahir"), r.FormValue("tanggal_lahir"), r.FormValue("jenis_kelamin"))
+		
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Gagal Simpan: "+err.Error(), 500)
 			return
 		}
-
 		http.Redirect(w, r, "/data_anak", http.StatusSeeOther)
 	}
 }
 
 func EditAnak(w http.ResponseWriter, r *http.Request) {
+	disableCache(w)
+	
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	id := r.URL.Query().Get("id_anak")
 	var a models.Anak
-	err := config.DB.QueryRow("SELECT id_anak, id_orangtua, nama_anak, nama_ibu, tempat_lahir, tanggal_lahir, jenis_kelamin, alamat FROM t_anak WHERE id_anak = ?", id).Scan(&a.ID, &a.IDOrangtua, &a.NamaAnak, &a.NamaIbu, &a.TempatLahir, &a.TanggalLahir, &a.JenisKelamin, &a.Alamat)
+	var idOrtu sql.NullInt64
+
+	query := `
+		SELECT a.id_anak, a.id_orangtua, a.nama_anak, a.tempat_lahir, a.tanggal_lahir, a.jenis_kelamin, 
+		COALESCE(o.nama_ibu, 'Tidak Ada Data') as nama_ibu, COALESCE(o.alamat, '-') as alamat 
+		FROM anak a 
+		LEFT JOIN orang_tua o ON a.id_orangtua = o.id_orangtua
+		WHERE a.id_anak = ?`
+
+	err := config.DB.QueryRow(query, id).Scan(
+			&a.ID, &idOrtu, &a.NamaAnak, &a.TempatLahir, &a.TanggalLahir, &a.JenisKelamin, &a.NamaIbu, &a.Alamat)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Data Anak Tidak Ditemukan", 404)
 		return
 	}
 
-	sessionData := GetSessionDetails(r)
-	role := sessionData["Role"]
+	if idOrtu.Valid {
+		a.IDOrangtua = int(idOrtu.Int64)
+	}
 
-	var parents []models.User
-	if role == "admin" {
-		rows, _ := config.DB.Query("SELECT id_user, username FROM users WHERE role = 'orangtua'")
-		if rows != nil {
-			defer rows.Close()
-			for rows.Next() {
-				var u models.User
-				rows.Scan(&u.ID, &u.Username)
-				parents = append(parents, u)
-			}
+	rows, _ := config.DB.Query("SELECT id_orangtua, nama_ibu, alamat FROM orang_tua ORDER BY nama_ibu ASC")
+	var parents []models.Parent
+	if rows != nil {
+		defer rows.Close()
+		for rows.Next() {
+			var p models.Parent
+			rows.Scan(&p.ID, &p.NamaIbu, &p.Alamat)
+			parents = append(parents, p)
 		}
 	}
 
 	data := map[string]interface{}{
 		"Anak":    a,
-		"Role":    role,
+		"Role":    GetSessionDetails(r)["Role"],
 		"Parents": parents,
 	}
 
@@ -168,27 +186,12 @@ func EditAnak(w http.ResponseWriter, r *http.Request) {
 func UpdateAnak(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		id := r.URL.Query().Get("id_anak")
-		namaAnak := r.FormValue("nama_anak")
-		namaIbu := r.FormValue("nama_ibu")
-		tempatLahir := r.FormValue("tempat_lahir")
-		tanggalLahir := r.FormValue("tanggal_lahir")
-		jenisKelamin := r.FormValue("jenis_kelamin")
-		alamat := r.FormValue("alamat")
+		
+		_, err := config.DB.Exec("UPDATE anak SET nama_anak=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=? WHERE id_anak=?",
+			r.FormValue("nama_anak"), r.FormValue("tempat_lahir"), r.FormValue("tanggal_lahir"), r.FormValue("jenis_kelamin"), id)
 
-		sessionData := GetSessionDetails(r)
-
-		var err error
-		if sessionData["Role"] == "admin" {
-			idOrangtua := r.FormValue("id_orangtua")
-			var idParent interface{} = nil
-			if idOrangtua != "" {
-				idParent = idOrangtua
-			}
-			_, err = config.DB.Exec("UPDATE t_anak SET id_orangtua=?, nama_anak=?, nama_ibu=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, alamat=? WHERE id_anak=?",
-			idParent, namaAnak, namaIbu, tempatLahir, tanggalLahir, jenisKelamin, alamat, id)
-		} else {
-			_, err = config.DB.Exec("UPDATE t_anak SET nama_anak=?, nama_ibu=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, alamat=? WHERE id_anak=?",
-			namaAnak, namaIbu, tempatLahir, tanggalLahir, jenisKelamin, alamat, id)
+		if r.FormValue("id_orangtua") != "" {
+			config.DB.Exec("UPDATE anak SET id_orangtua=? WHERE id_anak=?", r.FormValue("id_orangtua"), id)
 		}
 
 		if err != nil {
@@ -200,14 +203,18 @@ func UpdateAnak(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteAnak(w http.ResponseWriter, r *http.Request) {
+	disableCache(w)
+	
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	id := r.URL.Query().Get("id_anak")
-	_, err := config.DB.Exec("DELETE FROM t_anak WHERE id_anak=?", id)
+	
+	_, err := config.DB.Exec("DELETE FROM anak WHERE id_anak=?", id)
+	
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Gagal Hapus: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/data_anak", http.StatusSeeOther)

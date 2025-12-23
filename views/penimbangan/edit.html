@@ -2,47 +2,58 @@
 <html>
 <head>
   <title>Edit Data Penimbangan</title>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
-<body>
-  <div class="container">
-    <h2 class="mt-4">Edit Data Penimbangan</h2>
-    <form action="/update_penimbangan?id_penimbangan={{ .ID }}" method="post">
-      <input type="hidden" name="id_anak" value="{{ .IDAnak }}">
-      <div class="form-group">
-        <label for="tgl_penimbangan">Tanggal Penimbangan:</label>
-        <input type="date" class="form-control" name="tgl_penimbangan" value="{{ .TglPenimbangan }}">
+<body class="bg-light">
+  <div class="container mt-5">
+    <div class="card shadow" style="max-width: 600px; margin: auto;">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0 fw-bold">Edit Data Penimbangan</h5>
       </div>
-      <div class="form-group">
-        <label for="umur">Umur (Bln):</label>
-        <input type="text" class="form-control" name="umur" value="{{ .Umur }}">
+      <div class="card-body">
+        <form action="/update_penimbangan?id_penimbangan={{ .ID }}" method="post">
+          <input type="hidden" name="id_anak" value="{{ .IDAnak }}">
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Tanggal Penimbangan</label>
+            <input type="date" class="form-control" name="tgl_penimbangan" value="{{ .TanggalTimbang }}" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Umur (Bulan)</label>
+              <input type="number" class="form-control" name="umur" value="{{ .UmurBulan }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Berat Badan (Kg)</label>
+              <input type="number" step="0.1" class="form-control" name="berat_badan" value="{{ .BeratBadan }}" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Tinggi Badan (Cm)</label>
+              <input type="number" step="0.1" class="form-control" name="tinggi_badan" value="{{ .TinggiBadan }}">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Lingkar Kepala (Cm)</label>
+              <input type="number" step="0.1" class="form-control" name="lingkar_kepala" value="{{ .LingkarKepala }}">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold">Petugas Pemeriksa</label>
+            <input type="text" class="form-control" name="petugas" value="{{ .Petugas }}" required>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <a href="/data_penimbangan?id_anak={{ .IDAnak }}" class="btn btn-secondary">Batal</a>
+            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+          </div>
+
+        </form>
       </div>
-      <div class="form-group">
-        <label for="berat_badan">Berat Badan (Kg):</label>
-        <input type="text" class="form-control" name="berat_badan" value="{{ .BeratBadan }}">
-      </div>
-      <div class="form-group">
-        <label for="tinggi_badan">Tinggi Badan (Cm):</label>
-        <input type="text" class="form-control" name="tinggi_badan" value="{{ .TinggiBadan }}">
-      </div>
-      <div class="form-group">
-        <label for="jenis_imunisasi">Jenis Imunisasi:</label>
-        <input type="text" class="form-control" name="jenis_imunisasi" value="{{ .JenisImunisasi }}">
-      </div>
-      <div class="form-group">
-        <label for="keterangan">Keterangan:</label>
-        <input type="text" class="form-control" name="keterangan" value="{{ .Keterangan }}">
-      </div>
-      <div class="form-group">
-        <label for="petugas">Petugas:</label>
-        <input type="text" class="form-control" name="petugas" value="{{ .Petugas }}">
-      </div>
-      <div class="form-group">
-        <label for="posyandu">Posyandu:</label>
-        <input type="text" class="form-control" name="posyandu" value="{{ .Posyandu }}">
-      </div>
-      <button type="submit" class="btn btn-primary">Update</button>
-    </form>
+    </div>
   </div>
 </body>
 </html>
