@@ -21,18 +21,22 @@ func main() {
 		http.ServeFile(w, r, "views/index.html")
 	})
 
+	// 3. MANAJEMEN ANAK (Pastikan semua route terdaftar)
 	http.HandleFunc("/data_anak", controllers.DataAnak)
 	http.HandleFunc("/create_anak", controllers.CreateAnak)
 	http.HandleFunc("/store_anak", controllers.StoreAnak)
 	http.HandleFunc("/update_anak", controllers.UpdateAnak) 
 	http.HandleFunc("/delete_anak", controllers.DeleteAnak) 
 
+	// 4. MANAJEMEN PENIMBANGAN
 	http.HandleFunc("/data_penimbangan", controllers.DataPenimbangan)
 	http.HandleFunc("/create_penimbangan", controllers.CreatePenimbangan)
 	http.HandleFunc("/update_penimbangan", controllers.UpdatePenimbangan)
 	http.HandleFunc("/delete_penimbangan", controllers.DeletePenimbangan)
 	http.HandleFunc("/kms", controllers.KMS)
 
+	// 5. MANAJEMEN USER & ORANG TUA (Fitur Admin)
+	// Baris error sebelumnya sudah dihapus
 	http.HandleFunc("/create_orangtua", controllers.CreateOrangTua) 
 	http.HandleFunc("/laporan", controllers.HalamanLaporan)
 	http.HandleFunc("/api/jadwal", controllers.ApiJadwal)
