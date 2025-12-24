@@ -9,7 +9,6 @@ import (
 	"text/template"
 )
 
-// Helper cache (Salin jika belum ada di file lain)
 func disableCacheW(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
@@ -68,7 +67,7 @@ func CreatePenimbangan(w http.ResponseWriter, r *http.Request) {
 func StorePenimbangan(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		idAnak := r.FormValue("id_anak")
-		
+
 		tb := r.FormValue("tinggi_badan")
 		lk := r.FormValue("lingkar_kepala")
 		if tb == "" { tb = "0" }
@@ -88,7 +87,6 @@ func StorePenimbangan(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// --- FIX EDIT PENIMBANGAN (Bug Tampilan Blank) ---
 func EditPenimbangan(w http.ResponseWriter, r *http.Request) {
 	disableCacheW(w)
 	if !IsAuthenticated(r) {
@@ -98,7 +96,7 @@ func EditPenimbangan(w http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get("id_penimbangan")
 	var p models.Penimbangan
-	
+
 	query := `SELECT id_penimbangan, id_anak, DATE_FORMAT(tanggal_timbang, '%Y-%m-%d'), 
 			  umur_bulan, berat_badan, tinggi_badan, lingkar_kepala, petugas_pemeriksa 
 			  FROM penimbangan WHERE id_penimbangan = ?`
@@ -138,7 +136,7 @@ func DeletePenimbangan(w http.ResponseWriter, r *http.Request) {
 	disableCacheW(w)
 	id := r.URL.Query().Get("id_penimbangan")
 	idAnak := r.URL.Query().Get("id_anak")
-	
+
 	config.DB.Exec("DELETE FROM penimbangan WHERE id_penimbangan=?", id)
 	http.Redirect(w, r, "/data_penimbangan?id_anak="+idAnak, http.StatusSeeOther)
 }
@@ -150,7 +148,6 @@ func KMS(w http.ResponseWriter, r *http.Request) {
 	}
 	idAnak := r.URL.Query().Get("id_anak")
 
-	// Ambil data urut umur
 	rows, err := config.DB.Query("SELECT umur_bulan, berat_badan, tinggi_badan FROM penimbangan WHERE id_anak = ? ORDER BY umur_bulan ASC", idAnak)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -167,8 +164,7 @@ func KMS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonData, _ := json.Marshal(data)
-	
-	// Data Normal dummy (Bisa diperbaiki nanti dengan standar WHO)
+
 	normalRanges := []map[string]interface{}{
 		{"umur": 0, "lower": 2.5, "upper": 3.9},
 		{"umur": 12, "lower": 7.7, "upper": 10.8},

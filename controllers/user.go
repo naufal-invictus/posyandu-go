@@ -1,4 +1,5 @@
 package controllers
+package controllers
 
 import (
 	"net/http"
@@ -6,7 +7,6 @@ import (
 	"text/template"
 )
 
-// Menampilkan Form Tambah Orang Tua (User + Profile)
 func CreateOrangTua(w http.ResponseWriter, r *http.Request) {
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -20,7 +20,6 @@ func CreateOrangTua(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
-// Proses Simpan: Insert ke tabel Users -> Ambil ID -> Insert ke tabel Orang_Tua
 func StoreOrangTua(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/create_orangtua", http.StatusSeeOther)

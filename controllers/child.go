@@ -9,7 +9,6 @@ import (
 	"text/template"
 )
 
-// Helper untuk mematikan cache browser
 func disableCache(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
@@ -28,12 +27,11 @@ func DataAnak(w http.ResponseWriter, r *http.Request) {
 	role := sessionData["Role"]
 	userID := sessionData["UserID"]
 
-	// Query LEFT JOIN agar anak tanpa ortu (yatim/piatu/data rusak) tetap muncul
 	query := `SELECT a.id_anak, a.id_orangtua, a.nama_anak, a.tempat_lahir, a.tanggal_lahir, a.jenis_kelamin, 
 			  COALESCE(o.nama_ibu, 'Tidak Ada Data') as nama_ibu, COALESCE(o.alamat, '-') as alamat 
 			  FROM anak a 
 			  LEFT JOIN orang_tua o ON a.id_orangtua = o.id_orangtua`
-	
+
 	var rows *sql.Rows
 	var err error
 
@@ -70,18 +68,16 @@ func DataAnak(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, data)
 }
 
-// FIX: CreateAnak dengan Error Handling yang lebih baik
 func CreateAnak(w http.ResponseWriter, r *http.Request) {
 	disableCache(w)
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	
-	// Ambil data orang tua untuk dropdown
+
 	rows, err := config.DB.Query("SELECT id_orangtua, nama_ibu, alamat FROM orang_tua ORDER BY nama_ibu ASC")
 	if err != nil {
-		log.Println("Error fetching parents:", err) // Log error ke terminal
+		log.Println("Error fetching parents:", err)
 	}
 
 	var parents []models.Parent
@@ -89,7 +85,6 @@ func CreateAnak(w http.ResponseWriter, r *http.Request) {
 		defer rows.Close()
 		for rows.Next() {
 			var p models.Parent
-			// Scan sesuai struct (ID, NamaIbu, Alamat)
 			if err := rows.Scan(&p.ID, &p.NamaIbu, &p.Alamat); err == nil {
 				parents = append(parents, p)
 			}
@@ -98,7 +93,7 @@ func CreateAnak(w http.ResponseWriter, r *http.Request) {
 
 	tmpl := template.Must(template.ParseFiles("views/anak/create.html"))
 	tmpl.Execute(w, map[string]interface{}{
-		"Parents": parents, 
+		"Parents": parents,
 		"Role": GetSessionDetails(r)["Role"],
 	})
 }
@@ -107,7 +102,7 @@ func StoreAnak(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var idOrtu interface{}
 		idForm := r.FormValue("id_orangtua")
-		
+
 		if idForm != "" {
 			idOrtu = idForm
 		} else {
@@ -117,13 +112,13 @@ func StoreAnak(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				idOrtu = tempID
 			} else {
-				idOrtu = nil 
+				idOrtu = nil
 			}
 		}
 
 		_, err := config.DB.Exec("INSERT INTO anak (id_orangtua, nama_anak, tempat_lahir, tanggal_lahir, jenis_kelamin) VALUES (?, ?, ?, ?, ?)",
 			idOrtu, r.FormValue("nama_anak"), r.FormValue("tempat_lahir"), r.FormValue("tanggal_lahir"), r.FormValue("jenis_kelamin"))
-		
+
 		if err != nil {
 			http.Error(w, "Gagal Simpan: "+err.Error(), 500)
 			return
@@ -134,7 +129,7 @@ func StoreAnak(w http.ResponseWriter, r *http.Request) {
 
 func EditAnak(w http.ResponseWriter, r *http.Request) {
 	disableCache(w)
-	
+
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -145,13 +140,13 @@ func EditAnak(w http.ResponseWriter, r *http.Request) {
 
 	query := `
 		SELECT a.id_anak, a.id_orangtua, a.nama_anak, a.tempat_lahir, a.tanggal_lahir, a.jenis_kelamin, 
-		COALESCE(o.nama_ibu, 'Tidak Ada Data') as nama_ibu, COALESCE(o.alamat, '-') as alamat 
-		FROM anak a 
-		LEFT JOIN orang_tua o ON a.id_orangtua = o.id_orangtua
-		WHERE a.id_anak = ?`
+	COALESCE(o.nama_ibu, 'Tidak Ada Data') as nama_ibu, COALESCE(o.alamat, '-') as alamat 
+	FROM anak a 
+	LEFT JOIN orang_tua o ON a.id_orangtua = o.id_orangtua
+	WHERE a.id_anak = ?`
 
 	err := config.DB.QueryRow(query, id).Scan(
-			&a.ID, &idOrtu, &a.NamaAnak, &a.TempatLahir, &a.TanggalLahir, &a.JenisKelamin, &a.NamaIbu, &a.Alamat)
+		&a.ID, &idOrtu, &a.NamaAnak, &a.TempatLahir, &a.TanggalLahir, &a.JenisKelamin, &a.NamaIbu, &a.Alamat)
 
 	if err != nil {
 		http.Error(w, "Data Anak Tidak Ditemukan", 404)
@@ -186,7 +181,7 @@ func EditAnak(w http.ResponseWriter, r *http.Request) {
 func UpdateAnak(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		id := r.URL.Query().Get("id_anak")
-		
+
 		_, err := config.DB.Exec("UPDATE anak SET nama_anak=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=? WHERE id_anak=?",
 			r.FormValue("nama_anak"), r.FormValue("tempat_lahir"), r.FormValue("tanggal_lahir"), r.FormValue("jenis_kelamin"), id)
 
@@ -204,15 +199,15 @@ func UpdateAnak(w http.ResponseWriter, r *http.Request) {
 
 func DeleteAnak(w http.ResponseWriter, r *http.Request) {
 	disableCache(w)
-	
+
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	id := r.URL.Query().Get("id_anak")
-	
+
 	_, err := config.DB.Exec("DELETE FROM anak WHERE id_anak=?", id)
-	
+
 	if err != nil {
 		http.Error(w, "Gagal Hapus: "+err.Error(), http.StatusInternalServerError)
 		return
