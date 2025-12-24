@@ -1,5 +1,6 @@
 package models
 
+// Struct User untuk Login
 type User struct {
 	ID       int
 	Username string
@@ -7,6 +8,7 @@ type User struct {
 	Role     string
 }
 
+// Struct Anak (Relasi ke OrangTua)
 type Anak struct {
 	ID           int
 	IDOrangtua   int
@@ -19,6 +21,7 @@ type Anak struct {
 	Alamat       string
 }
 
+// Struct Penimbangan
 type Penimbangan struct {
 	ID             int
 	IDAnak         int
@@ -30,6 +33,7 @@ type Penimbangan struct {
 	Petugas        string
 }
 
+// Struct untuk Dropdown/Data Orang Tua
 type Parent struct {
     ID int
     Username string
@@ -37,6 +41,7 @@ type Parent struct {
     Alamat string
 }
 
+// Struct untuk Grafik KMS (JSON)
 type KMSData struct {
 	Umur        int     `json:"umur"`
 	BeratBadan  float64 `json:"berat_badan"`
@@ -45,6 +50,7 @@ type KMSData struct {
 }
 
 
+// Struct Jadwal Kegiatan (Dipakai di API & Report)
 type Jadwal struct {
 	ID           int    `json:"id"`
 	NamaKegiatan string `json:"nama_kegiatan"`
@@ -53,6 +59,7 @@ type Jadwal struct {
 	Keterangan   string `json:"keterangan"`
 }
 
+// Struct Stok Vaksin (Dipakai di API & Report)
 type StokVaksin struct {
 	ID          int    `json:"id"`
 	NamaVaksin  string `json:"nama_vaksin"`
@@ -60,6 +67,7 @@ type StokVaksin struct {
 	TanggalUpd  string `json:"tanggal_update"`
 }
 
+// Struct Statistik Dashboard Laporan
 type LaporanStats struct {
 	TotalAnak        int
 	TotalPenimbangan int

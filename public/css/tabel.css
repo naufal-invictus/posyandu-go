@@ -70,10 +70,12 @@ tfoot th {
   color: #666;
 }
 
+/* Kombinasi warna antar kolom */
 tr:nth-child(even) td {
   background-color: #f2f2f2;
 }
 
+/* Blok warna navy */
 th,
 th a,
 .empty-data,

@@ -6,6 +6,7 @@ import (
 	"text/template"
 )
 
+// Menampilkan Form Tambah Orang Tua (User + Profile)
 func CreateOrangTua(w http.ResponseWriter, r *http.Request) {
 	if !IsAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -32,14 +33,17 @@ func StoreOrangTua(w http.ResponseWriter, r *http.Request) {
 	alamat := r.FormValue("alamat")
 	noHP := r.FormValue("no_hp")
 
+	// 1. Insert User
 	res, err := config.DB.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, 'orangtua')", username, password)
 	if err != nil {
 		http.Error(w, "Gagal membuat user (Username mungkin sudah ada): "+err.Error(), 500)
 		return
 	}
 
+	// 2. Ambil ID User yang baru dibuat
 	lastID, _ := res.LastInsertId()
 
+	// 3. Insert Profil Orang Tua
 	_, err = config.DB.Exec("INSERT INTO orang_tua (id_user, nama_ibu, nama_ayah, alamat, no_hp) VALUES (?, ?, ?, ?, ?)",
 		lastID, namaIbu, namaAyah, alamat, noHP)
 

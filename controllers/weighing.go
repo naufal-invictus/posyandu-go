@@ -39,6 +39,7 @@ func DataPenimbangan(w http.ResponseWriter, r *http.Request) {
 	var list []models.Penimbangan
 	for rows.Next() {
 		var p models.Penimbangan
+		// Scan 
 		rows.Scan(&p.ID, &p.IDAnak, &p.TanggalTimbang, &p.UmurBulan, &p.BeratBadan, &p.TinggiBadan, &p.LingkarKepala, &p.Petugas)
 		list = append(list, p)
 	}
@@ -67,7 +68,7 @@ func CreatePenimbangan(w http.ResponseWriter, r *http.Request) {
 func StorePenimbangan(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		idAnak := r.FormValue("id_anak")
-
+		
 		tb := r.FormValue("tinggi_badan")
 		lk := r.FormValue("lingkar_kepala")
 		if tb == "" { tb = "0" }
@@ -96,7 +97,8 @@ func EditPenimbangan(w http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get("id_penimbangan")
 	var p models.Penimbangan
-
+	
+	
 	query := `SELECT id_penimbangan, id_anak, DATE_FORMAT(tanggal_timbang, '%Y-%m-%d'), 
 			  umur_bulan, berat_badan, tinggi_badan, lingkar_kepala, petugas_pemeriksa 
 			  FROM penimbangan WHERE id_penimbangan = ?`
@@ -136,7 +138,7 @@ func DeletePenimbangan(w http.ResponseWriter, r *http.Request) {
 	disableCacheW(w)
 	id := r.URL.Query().Get("id_penimbangan")
 	idAnak := r.URL.Query().Get("id_anak")
-
+	
 	config.DB.Exec("DELETE FROM penimbangan WHERE id_penimbangan=?", id)
 	http.Redirect(w, r, "/data_penimbangan?id_anak="+idAnak, http.StatusSeeOther)
 }
@@ -164,7 +166,7 @@ func KMS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonData, _ := json.Marshal(data)
-
+	
 	normalRanges := []map[string]interface{}{
 		{"umur": 0, "lower": 2.5, "upper": 3.9},
 		{"umur": 12, "lower": 7.7, "upper": 10.8},
